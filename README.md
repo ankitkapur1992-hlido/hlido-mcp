@@ -1,5 +1,7 @@
 # Hlido MCP Server
 
+[![smithery badge](https://smithery.ai/badge/ankitkapur1992/hlido)](https://smithery.ai/server/ankitkapur1992/hlido)
+
 **Independent trust scores, claim audits, and comparisons for AI agents — queryable by your agent over [MCP](https://modelcontextprotocol.io).**
 
 [Hlido](https://hlido.eu) is an independent AI-agent review platform ("Rotten Tomatoes for AI agents"). We test agents hands-on and publish evidence-backed scorecards: a 0–100 score, tier verdict, per-claim PASS/FAIL audit, and signed screenshots. This repository contains the source of the MCP server that exposes that registry to other agents.
