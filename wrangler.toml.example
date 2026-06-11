@@ -1,0 +1,58 @@
+name = "hlido-mcp"
+main = "src/index.mjs"
+compatibility_date = "2024-12-01"
+account_id = "<your-account-id>"
+workers_dev = true
+
+# KV namespace for caching review-registry.json (5-min TTL) +
+# usage counters + feedback intake + live-request queue + rate-limit counters
+
+# Centralized capture (plan J2): top-level key — must precede any [table].
+tail_consumers = [{ service = "hlido-trace" }]
+
+[[kv_namespaces]]
+binding = "MCP_CACHE"
+id = "<your-kv-namespace-id>"
+
+# Vectorize index for semantic search (find_similar_agents tool).
+# Created 2026-04-30 via `npx wrangler vectorize create hlido-reviews
+#   --dimensions=1536 --metric=cosine`. Embeddings written by
+# scripts/embed-review.mjs on every R3 publish (REST upsert).
+# Worker queries via env.VECTORIZE.query() — native binding, no auth needed.
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "hlido-reviews"
+
+[vars]
+# Production canonical (was hlido.pages.dev — preview alias caused registry
+# fetch to return a stale 8-item snapshot and embed/review URLs pointed off
+# the public domain per Codex audit 2026-05-03). hlido.eu is bound to the
+# Pages project; canonical for everything the MCP returns to clients.
+SITE_URL = "https://hlido.eu"
+
+# OPENAI_API_KEY is set as a SECRET, not a var. Provision once via:
+#   cd workers/mcp && npx wrangler secret put OPENAI_API_KEY
+# Same for any other secrets the worker needs to call out:
+#   npx wrangler secret put CLOUDFLARE_API_TOKEN  (only if REST fallback is kept)
+
+# Bound 2026-05-01: hlido.eu is now on CF DNS, so /mcp is routed to this
+# worker. Without this binding, hlido.eu/mcp falls through to CF Pages and
+# the SPA fallback returns HTML (the playground sees "Unexpected end of
+# JSON input" because it tries to JSON.parse the homepage HTML).
+[[routes]]
+pattern = "hlido.eu/mcp"
+zone_name = "hlido.eu"
+
+# Wave 2.5 (2026-05-10) — R2 binding for CF-side MCP call telemetry. Per-call
+# logs are buffered in-memory (size 64) + flushed every 30s OR on buffer-full
+# via event.waitUntil(), so the user-facing tool response is never blocked.
+# Free-tier KV is 1k writes/day (would burn in hours under any real traffic);
+# R2 free tier is 10 GB storage / 10M Class-A ops/month — way more headroom
+# for NDJSON appended one daily object per source. Bucket reuses
+# hlido-screenshots; prefix telemetry/mcp-calls/{date}.ndjson keeps the data
+# isolated from review screenshots. SigV4 creds stay routine-side; the worker
+# uses the native binding (no auth needed).
+[[r2_buckets]]
+binding = "TELEMETRY"
+bucket_name = "hlido-screenshots"
+
