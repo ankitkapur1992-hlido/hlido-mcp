@@ -1,0 +1,158 @@
+{
+  "_about": "MCP v2 manual-validation fixtures (subscribe / explain / recommend). One JSON-RPC request + expected response shape per new tool. The expected_response_shape is the schema agents/clients should expect; concrete values vary with the live registry. Use with curl + the deployed Worker at https://hlido.eu/mcp or with the Python server via stdio.",
+  "_curl_example": "curl -s -X POST https://hlido.eu/mcp -H 'Content-Type: application/json' -d @<(jq '.fixtures[0].request' workers/mcp/test/v2-fixtures.json)",
+  "fixtures": [
+    {
+      "tool": "subscribe",
+      "scenario": "Subscribe to verdict changes for an existing slug; default rss channel.",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+          "name": "subscribe",
+          "arguments": { "slug": "aider", "channel": "rss" }
+        }
+      },
+      "expected_response_shape": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "<json-encoded payload>"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "expected_payload_shape": {
+        "ok": true,
+        "status": "advisory",
+        "slug": "aider",
+        "current_state": {
+          "score": "<integer | null>",
+          "tier": "<VITAL|STEADY|FADING|FLATLINE|UNSCORED>",
+          "last_tested": "<ISO timestamp | null>"
+        },
+        "suggestion": "<string explaining Wave 3 deferral and polling alternatives>",
+        "channel_advised": "<URL — RSS or attestation JSON depending on channel>",
+        "preview_note": "<string flagging this is preview-only>"
+      },
+      "notes": [
+        "Pass channel: 'json' to get /changelog/feed.json; 'webhook' returns the per-slug attestation URL as a polling target.",
+        "If slug is not in the registry, returns ok:false with suggestion to use submit_agent or request_quick_audit."
+      ]
+    },
+    {
+      "tool": "explain",
+      "scenario": "Explain why an agent has its current score, claim by claim, no dimension filter.",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+          "name": "explain",
+          "arguments": { "slug": "abridge" }
+        }
+      },
+      "expected_response_shape": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "<json-encoded payload>"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "expected_payload_shape": {
+        "ok": true,
+        "slug": "abridge",
+        "dimension": null,
+        "score": "<integer | null>",
+        "tier": "<VITAL|STEADY|FADING|FLATLINE|UNSCORED>",
+        "evidence": [
+          {
+            "claim": "<string>",
+            "verdict": "<PASS|FAIL|PARTIAL|UNKNOWN>",
+            "evidence_quote": "<string, max 240 chars>",
+            "source_surface": "<string | null>"
+          }
+        ],
+        "summary": "<natural-language synthesis: name, score, tier, pass/fail counts, headline>",
+        "review_url": "https://hlido.eu/reviews/abridge/"
+      },
+      "notes": [
+        "evidence_quote is truncated to 240 chars per spec.",
+        "Pass dimension: 'homepage' to filter to homepage-source claims. Unknown dimensions return supported_dimensions in the response so callers can self-correct."
+      ]
+    },
+    {
+      "tool": "recommend",
+      "scenario": "Buyer wants Coding agents that score 70+ for multi-file refactor work.",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+          "name": "recommend",
+          "arguments": {
+            "constraints": {
+              "category": "Coding",
+              "min_score": 70,
+              "tier": "STEADY",
+              "use_case": "multi-file refactor in TypeScript",
+              "max_results": 5
+            }
+          }
+        }
+      },
+      "expected_response_shape": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "<json-encoded payload>"
+            }
+          ],
+          "isError": false
+        }
+      },
+      "expected_payload_shape": {
+        "ok": true,
+        "constraints": {
+          "category": "coding",
+          "min_score": 70,
+          "tier": "STEADY",
+          "use_case": "multi-file refactor in TypeScript",
+          "max_results": 5
+        },
+        "count": "<integer 0-5>",
+        "results": [
+          {
+            "slug": "<string>",
+            "name": "<string>",
+            "score": "<integer>",
+            "tier": "<VITAL|STEADY>",
+            "summary": "<string>",
+            "review_url": "https://hlido.eu/reviews/<slug>/",
+            "why_match": "<string explaining ranking>"
+          }
+        ]
+      },
+      "notes": [
+        "max_results clamped to [1, 25]; default 5.",
+        "category match is case-insensitive equality against registry's `category` field.",
+        "tier is treated as a floor (e.g. STEADY admits VITAL+STEADY, not FADING/FLATLINE).",
+        "Without use_case, results are ranked purely by Laddoo score desc."
+      ]
+    }
+  ]
+}
