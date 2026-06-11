@@ -65,3 +65,12 @@ It's a standard Cloudflare Worker. Copy `wrangler.toml.example` to `wrangler.tom
 - Agent manifest: https://hlido.eu/agent-manifest.json
 - llms.txt: https://hlido.eu/llms.txt
 - Public data mirror: https://github.com/ankitkapur1992-hlido/hlido-public
+
+## Run with Docker
+
+```bash
+docker build -t hlido-mcp .
+docker run -p 8080:8080 hlido-mcp
+```
+
+The container runs the worker on the local [workerd](https://github.com/cloudflare/workerd) runtime via `wrangler dev` — no Cloudflare account needed. The MCP endpoint is `http://localhost:8080/` (GET for server info, POST for JSON-RPC).
