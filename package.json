@@ -12,6 +12,7 @@
     "url": "https://github.com/ankitkapur1992-hlido/hlido-mcp.git"
   },
   "scripts": {
+    "build": "node --check bin/stdio.mjs",
     "start": "node bin/stdio.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
